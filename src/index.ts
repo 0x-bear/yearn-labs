@@ -208,7 +208,10 @@ const main = async () => {
     const dataString = fs.readFileSync('./strategyScores.json','utf-8')
     const correct = normalizeJson(dataString); // correct string formatting
     const data = JSON.parse(correct);
-    for (var item of data) {strategyScores.push(item);}
+    for (var item of data) {
+        item.TVL = parseFloat(item.TVL);
+        strategyScores.push(item);
+    }
     console.log(strategyScores)
 
     // group them by vaults
@@ -222,10 +225,12 @@ const main = async () => {
 
     // aggregate!
     const vaults = Object.keys(vaultStrategyScores);
-    const result = vaults.map((key) =>
-        aggregateScores(vaultStrategyScores[key])
-    );
+    const result = vaults.map((key) => {
+        return aggregateScores(vaultStrategyScores[key]);
+    }).sort((a, b) => b.TVL - a.TVL);
     console.log(result);
+    fs.writeFileSync('vaultStrategyScores.json',JSON.stringify(result,null,2))
+    console.log(`'total TVL accounted for: ${result.reduce((previous, current) => previous + current.TVL, 0)}`)
 };
 
 main();
