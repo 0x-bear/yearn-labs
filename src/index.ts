@@ -1,3 +1,4 @@
+import fs from 'fs';
 import axios from 'axios';
 import BigNumber from 'bignumber.js';
 import { Yearn } from '@yfi/sdk';
@@ -49,9 +50,11 @@ const getStrategyScores = async () => {
 
     // get list of strategies from the subgraph
     const vaults = await yearn.vaults.get();
+    console.log(vaults)
     const vaultStrategies = await getStrategiesByVaults(
         vaults.map((vault) => vault.address)
     );
+    console.log(vaultStrategies)
     const addresses = Object.keys(vaultStrategies)
         .map((key) => vaultStrategies[key])
         .flat()
@@ -69,6 +72,7 @@ const getStrategyScores = async () => {
     // get TVL and longevity from each strategy
     const strategyScores: StrategyScores[] = [];
     for (var strategy of strategies) {
+        console.log(strategies.indexOf(strategy))
         // get vault name
         let vaultName = '';
         for (var vault of vaults) {
@@ -194,9 +198,18 @@ const aggregateScores = (scores: StrategyScores[]): VaultScores => {
     };
 };
 
+// from https://stackoverflow.com/questions/44562635/regular-expression-add-double-quotes-around-values-and-keys-in-javascript
+function normalizeJson(str: string){return str.replace(/"?([\w_\- ]+)"?\s*?:\s*?"?(.*?)"?\s*?([,}\]])/gsi, (str, index, item, end) => '"'+index.replace(/"/gsi, '').trim()+'":"'+item.replace(/"/gsi, '').trim()+'"'+end).replace(/,\s*?([}\]])/gsi, '$1');}
+
 const main = async () => {
     // fetch the metrics for individual strategies
-    const strategyScores = await getStrategyScores();
+    // const strategyScores = await getStrategyScores(); //online
+    var strategyScores: StrategyScores[] = [];
+    const dataString = fs.readFileSync('./strategyScores.json','utf-8')
+    const correct = normalizeJson(dataString); // correct string formatting
+    const data = JSON.parse(correct);
+    for (var item of data) {strategyScores.push(item);}
+    console.log(strategyScores)
 
     // group them by vaults
     const vaultStrategyScores = strategyScores.reduce((previous, current) => {
